@@ -37,6 +37,14 @@
 		<developerConnection>scm:git:ssh://git@github.com/tomp2p/TomP2P-SimGrid.git</developerConnection>
 	</scm>
 
+	<distributionManagement>
+		<repository>
+			<id>ssh-tomp2p</id>
+			<!-- The URL is CMS specific -->
+			<url>scp://tomp2p.net/home/draft/maven</url>
+		</repository>
+	</distributionManagement>
+
 	<build>
 		<extensions>
       		<extension>
