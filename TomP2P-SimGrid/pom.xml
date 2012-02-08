@@ -24,6 +24,19 @@
 	<description>TomP2P SimGrid Integration</description>
 	<url>http://tomp2p.net/simgrid</url>
 
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0</url>
+		</license>
+	</licenses>
+
+	<scm>
+		<url>https://github.com/tomp2p/TomP2P-SimGrid</url>
+		<connection>scm:git:git://github.com/tomp2p/TomP2P-SimGrid.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/tomp2p/TomP2P-SimGrid.git</developerConnection>
+	</scm>
+
 	<build>
 		<extensions>
       		<extension>
