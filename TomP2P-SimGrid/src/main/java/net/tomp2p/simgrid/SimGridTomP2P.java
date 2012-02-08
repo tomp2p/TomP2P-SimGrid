@@ -1,5 +1,9 @@
 package net.tomp2p.simgrid;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -25,6 +29,8 @@ import net.tomp2p.rpc.RequestHandlerUDP;
 import net.tomp2p.utils.Timing;
 import net.tomp2p.utils.Timings;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.simgrid.msg.HostFailureException;
 import org.simgrid.msg.Msg;
 import org.simgrid.msg.NativeException;
@@ -42,9 +48,20 @@ public class SimGridTomP2P
 	private final static long seed = 42;
 	private final static int nr = 100;
 	private final static Random rnd = new Random(seed);
+	private static Simulation simulation;
 	// create the peers
 	static
 	{
+		try
+		{
+			System.loadLibrary("simgrid");
+			System.loadLibrary("SG_java");
+	    } 
+		catch (UnsatisfiedLinkError e) 
+	    {
+	    	loadFromJar("simgrid", "SG_java");
+	    }
+	
 		Timings.setImpl(new Timing()
 		{
 			@Override
@@ -156,6 +173,51 @@ public class SimGridTomP2P
 		Msg.info("peers created");
 	}
 	
+	private static void loadFromJar(String... libs) 
+	{
+		for(String lib:libs)
+		{
+			try
+			{
+				loadLib(lib);
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private static void loadLib(String name) throws IOException 
+	{
+		String pathJar = null;
+		String pathEclipse = null;
+		if(OSTester.is64bit() && OSTester.isUnix())
+		{
+			name = "lib"+name+".so";
+			//jar version
+			pathJar = "libs"+File.separator+"x64"+File.separator+name;
+			//eclipse workspace version
+			pathEclipse = File.separator+"libs"+File.separator+"x64"+File.separator+name;
+		}
+		if(pathJar == null || pathEclipse == null)
+		{
+			throw new IOException("Platform not supported");
+		}
+		InputStream in = SimGridTomP2P.class.getResourceAsStream(pathJar);
+		if(in == null)
+		{	
+			in = SimGridTomP2P.class.getResourceAsStream(pathEclipse);
+		}
+		File fileOut = new File(System.getProperty("java.io.tmpdir") + "/" + name);
+		fileOut.deleteOnExit();
+		OutputStream out = FileUtils.openOutputStream(fileOut);
+		IOUtils.copy(in, out);
+		in.close();
+		out.close();
+		System.load(fileOut.toString());
+	}
+	
 	/**
 	 * Returns the static peers created here. We need to get them in a static
 	 * context since the SimGrid threads may die.
@@ -236,7 +298,7 @@ public class SimGridTomP2P
 		peer.getConnectionBean().setSender(new Sender()
 		{
 			@Override
-			public void sendUDP(RequestHandlerUDP handler, FutureResponse futureResponse, Message message,
+			public void sendUDP(RequestHandlerUDP<? extends BaseFuture> handler, FutureResponse futureResponse, Message message,
 					ChannelCreator channelCreator)
 			{
 				addQueue(message.getSender().getID(), new SendingMessage("snd-udp", message, futureResponse));
@@ -251,7 +313,7 @@ public class SimGridTomP2P
 			}
 			
 			@Override
-			public void sendBroadcastUDP(RequestHandlerUDP handler, FutureResponse futureResponse,
+			public void sendBroadcastUDP(RequestHandlerUDP<? extends BaseFuture> handler, FutureResponse futureResponse,
 					Message message, ChannelCreator channelCreator)
 			{
 				throw new RuntimeException("broadcasting in SimGrid-TomP2P not support");
@@ -285,6 +347,16 @@ public class SimGridTomP2P
 			p.restart();
 	}
 	
+	public static void setSimulation(Simulation simulation2)
+	{
+		simulation = simulation2;
+	}
+	
+	public static Simulation getSimulation()
+	{
+		return simulation;
+	}
+	
 	/**
 	 * Initialize the simulation.
 	 * 
@@ -296,7 +368,7 @@ public class SimGridTomP2P
 		Msg.init(args);
 		if(args.length < 2) 
 		{
-    		Msg.info("Usage: Test platform_file deployment_file");
+    		Msg.info("Usage: java -jar TomP2P-SimGrid platform_file deployment_file ");
         	System.exit(1);
     	}
 	
