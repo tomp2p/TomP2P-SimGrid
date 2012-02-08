@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package net.tomp2p.simgrid;
 
 import java.io.File;
@@ -6,7 +22,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -20,6 +35,7 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.MessageCodec;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
@@ -38,6 +54,18 @@ import org.simgrid.msg.Process;
 import org.simgrid.msg.TimeoutException;
 import org.simgrid.msg.TransferFailureException;
 
+/**
+ * This the bridge for TomP2P to SimGrid. To make it start, one has to call:
+ * 
+ * <pre>
+ * SimGridTomP2P.checkArgs(args);
+ * SimGridTomP2P.setSimulation(new Simulation(...));
+ * SimGridTomP2P.main(args);
+ * </pre>
+ * 
+ * @author Thomas Bocek
+ *
+ */
 public class SimGridTomP2P
 {
 	//static data, we create here our peers to be able to get them on demand
@@ -45,21 +73,20 @@ public class SimGridTomP2P
 	private final static Map<MessageID, FutureResponse> futures = new HashMap<MessageID, FutureResponse>();
 	private final static Map<Number160, BlockingQueue<SendingMessage>> pendingMessages = new HashMap<Number160, BlockingQueue<SendingMessage>>();
 	private final static Map<Number160, Process> paused = new ConcurrentHashMap<Number160, Process>();
-	private final static long seed = 42;
-	private final static int nr = 100;
-	private final static Random rnd = new Random(seed);
+	private final static Map<Number160, String> mailboxMapping = new HashMap<Number160, String>();
 	private static Simulation simulation;
 	// create the peers
 	static
 	{
 		try
 		{
+			//load simgrid and the java JNI bindings
 			System.loadLibrary("simgrid");
 			System.loadLibrary("SG_java");
 	    } 
 		catch (UnsatisfiedLinkError e) 
 	    {
-	    	loadFromJar("simgrid", "SG_java");
+			loadFromJar("simgrid", "SG_java");
 	    }
 	
 		Timings.setImpl(new Timing()
@@ -96,9 +123,14 @@ public class SimGridTomP2P
 				return (long)(Msg.getClock()*1000);
 			}
 		});
+	}
+	
+	private static void createPeers(int nr)
+	{
 		for(int i=0;i<nr;i++)
 		{
-			Number160 peerID = new Number160(rnd);
+			Number160 peerID = Number160.createHash(""+i);
+			mailboxMapping.put(peerID, ""+i);
 			Peer peer = new Peer(peerID);
 			
 			peer.getP2PConfiguration().setDisableBind(true);
@@ -255,14 +287,15 @@ public class SimGridTomP2P
 	public static void send(String type, Message message, FutureResponse futureResponse) throws NativeException, TransferFailureException, HostFailureException, TimeoutException
 	{
 		//we don't care about the computation
-		SimGridMessage msgSG = new SimGridMessage("msg-"+type, 0, message.getLong());
+		SimGridMessage msgSG = new SimGridMessage("msg-"+type, 0, message.getLength()+MessageCodec.HEADER_SIZE);
 		msgSG.setMessage(message);
 		Msg.info("send ["+type+"] "+message);
 		if(futureResponse != null)
 		{
 			futures.put(new MessageID(message), futureResponse);
 		}
-		msgSG.send(message.getRecipient().getID().toString());
+		String mailbox=mailboxMapping.get(message.getRecipient().getID());
+		msgSG.send(mailbox);
 	}
 	
 	public static FutureResponse getAndRemoveFuture(MessageID messageID)
@@ -344,7 +377,9 @@ public class SimGridTomP2P
 	{
 		Process p = paused.remove(host);
 		if (p!=null)
+		{
 			p.restart();
+		}
 	}
 	
 	public static void setSimulation(Simulation simulation2)
@@ -357,20 +392,28 @@ public class SimGridTomP2P
 		return simulation;
 	}
 	
+	public static void checkArgs(String[] args)
+	{
+		if(args.length < 2) 
+		{
+    		System.err.println("Usage: java -jar TomP2P-SimGrid platform_file deployment_file ");
+        	System.exit(1);
+    	}
+	}
+	
 	/**
 	 * Initialize the simulation.
 	 * 
 	 * @param args Two arguments are required: the platform file and the deployment file
+	 * @throws IOException 
 	 */
-	public static void main(String[] args)
+	public static void main(String[] args) throws IOException
 	{
 		/* initialize the MSG simulation. Must be done before anything else (even logging). */
 		Msg.init(args);
-		if(args.length < 2) 
-		{
-    		Msg.info("Usage: java -jar TomP2P-SimGrid platform_file deployment_file ");
-        	System.exit(1);
-    	}
+		checkArgs(args);
+		int nr = Utils.countHosts(args[1]);
+		createPeers(nr);
 	
 		// construct the platform and deploy the application
 		Msg.createEnvironment(args[0]);

@@ -1,7 +1,26 @@
+/*
+ * Copyright 2012 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package net.tomp2p.simgrid;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Random;
 
 import net.tomp2p.peers.Number160;
@@ -23,7 +42,8 @@ public class Utils
 		options.addOption("o", "old", true, "path name of the old platform.xml file");
 		options.addOption("n", "new", true, "path name of the new (transformed) platform.xml file");
 		options.addOption("s", "seed", true, "seed for the random generator");
-		options.addOption("d", "deployment",true, "path name of the deployment.xml file");
+		options.addOption("d", "deployment", true, "path name of the deployment.xml file");
+		options.addOption("d1", "deployment1", true, "path name of the deployment.xml file");
 		options.addOption("r", "nrpeers",true, "number of peers to create");
 	}
 	
@@ -112,7 +132,41 @@ public class Utils
 						" </process>\n");
 				sb.append(" <process host=\""+number160.toString()+"\" function=\"net.tomp2p.simgrid.TomP2PReceiver\"/>\n");
 				sb.append(" <process host=\""+number160.toString()+"\" function=\"net.tomp2p.simgrid.TomP2PSender\"/>\n");
+				sb.append(" <!-- next -->\n");
 				
+			}
+			FileUtils.write(fileNameDep, sb.append(trailer).toString());
+		}
+		
+		if(cmd.hasOption("d1") && cmd.hasOption("r"))
+		{
+			work = true;
+			File fileNameDep = new File(cmd.getOptionValue("d1"));
+			String header="<?xml version='1.0'?>\n" +
+					"<!DOCTYPE platform SYSTEM \"http://simgrid.gforge.inria.fr/simgrid.dtd\">\n" +
+					"<platform version=\"3\">\n";
+			String trailer ="</platform>";
+			StringBuilder sb = new StringBuilder(header);
+			int nr = 0;
+			if(cmd.hasOption("r"))
+			{
+				try
+				{
+					nr=Integer.parseInt(cmd.getOptionValue("r"));
+				}
+				catch (NumberFormatException nfe)
+				{
+					printHelpAndExit("Could not parse -r ["+cmd.getOptionValue("r")+"]");
+				}
+			}
+			for(int i=0;i<nr;i++)
+			{
+				sb.append(" <process host=\""+i+"\" function=\"net.tomp2p.simgrid.SimulationLoop\">\n" +
+						"  <argument value=\"0\"/> <!-- boostrap to -->\n" +
+						" </process>\n");
+				sb.append(" <process host=\""+i+"\" function=\"net.tomp2p.simgrid.TomP2PReceiver\"/>\n");
+				sb.append(" <process host=\""+i+"\" function=\"net.tomp2p.simgrid.TomP2PSender\"/>\n");
+				sb.append(" <!-- next -->\n");
 			}
 			FileUtils.write(fileNameDep, sb.append(trailer).toString());
 		}
@@ -129,5 +183,26 @@ public class Utils
 		System.out.println(msg);
 		HelpFormatter formatter = new HelpFormatter();
 		formatter.printHelp( "Utils", options );
+	}
+
+	public static int countHosts(String string) throws IOException
+	{
+		File file = new File(string);
+		BufferedReader br = new BufferedReader(new FileReader(file));
+		String line = null;
+		HashSet<String> hosts = new HashSet<String>();
+		while((line=br.readLine())!=null)
+		{
+			String markerStr = "host=\"";
+			String markerEnd = "\"";
+			int start = line.indexOf(markerStr);
+			int end = line.indexOf(markerEnd, start+markerStr.length()+1);
+			if(start > 0 & end > 0)
+			{
+				hosts.add(line.substring(start+markerStr.length(), end));
+			}
+		}
+		br.close();
+		return hosts.size();
 	}
 }
