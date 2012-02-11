@@ -80,13 +80,23 @@ public class SimGridTomP2P
 	{
 		try
 		{
-			//load simgrid and the java JNI bindings
+			//load simgrid
 			System.loadLibrary("simgrid");
-			System.loadLibrary("SG_java");
 	    } 
 		catch (UnsatisfiedLinkError e) 
 	    {
-			loadFromJar("simgrid", "SG_java");
+			// if it fails, load the one stored in the jar file
+			loadFromJar("simgrid");
+	    }
+		try
+		{
+			// load the simgrid JNI bindings
+			System.loadLibrary("SG_java");
+		}
+		catch (UnsatisfiedLinkError e) 
+	    {
+			// if it fails, load the one stored in the jar file
+			loadFromJar("SG_java");
 	    }
 	
 		Timings.setImpl(new Timing()
@@ -205,18 +215,15 @@ public class SimGridTomP2P
 		Msg.info("peers created");
 	}
 	
-	private static void loadFromJar(String... libs) 
+	private static void loadFromJar(String lib) 
 	{
-		for(String lib:libs)
+		try
 		{
-			try
-			{
-				loadLib(lib);
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
+			loadLib(lib);
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
 		}
 	}
 	
