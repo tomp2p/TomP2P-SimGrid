@@ -28,14 +28,6 @@ public class TomP2PSender extends Process
 	public TomP2PSender(Host host, String name, String[]args)
 	{
 		super(host, "Sender-"+host, args);
-		try
-		{
-			main(args);
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace();
-		}
 	}
 	@Override
 	public void main(String[] args) throws MsgException

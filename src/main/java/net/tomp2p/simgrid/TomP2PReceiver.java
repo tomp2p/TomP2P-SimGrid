@@ -37,14 +37,6 @@ public class TomP2PReceiver extends Process
 	public TomP2PReceiver(Host host, String name, String[]args)
 	{
 		super(host, "Receiver-"+host, args);
-		try
-		{
-			main(args);
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace();
-		}
 	}
 	
 	@Override

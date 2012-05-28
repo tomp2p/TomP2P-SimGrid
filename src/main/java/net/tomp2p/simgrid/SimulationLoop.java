@@ -29,14 +29,6 @@ public class SimulationLoop extends Process
 	public SimulationLoop(Host host, String name, String[]args)
 	{
 		super(host, "Loop-"+host, args);
-		try
-		{
-			main(args);
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace();
-		}
 	}
 	
 	@Override
