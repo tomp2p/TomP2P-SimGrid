@@ -19,7 +19,7 @@
 	<groupId>net.tomp2p.simgrid</groupId>
 	<artifactId>TomP2P-SimGrid</artifactId>
 	<name>TomP2P-SimGrid</name>
-	<version>1.0.3</version>
+	<version>1.0.4-SNAPSHOT</version>
 	<description>TomP2P SimGrid Integration</description>
 	<url>http://tomp2p.net/simgrid</url>
 
