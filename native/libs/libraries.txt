@@ -1,4 +1,4 @@
 The version of the libraries are:
 
-libSG_java 3.6.2.1
-libsimgrid 3.6.2
+libSG_java latest from git / 28.5.2012
+libsimgrid 3.7

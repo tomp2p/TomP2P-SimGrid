@@ -24,6 +24,7 @@ import net.tomp2p.message.MessageID;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 
+import org.simgrid.msg.Host;
 import org.simgrid.msg.Msg;
 import org.simgrid.msg.MsgException;
 import org.simgrid.msg.Process;
@@ -32,11 +33,24 @@ import org.simgrid.msg.Task;
 public class TomP2PReceiver extends Process
 {
 	private volatile boolean running = true;
+	
+	public TomP2PReceiver(Host host, String name, String[]args)
+	{
+		super(host, "Receiver-"+host, args);
+		try
+		{
+			main(args);
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
 	@Override
 	public void main(String[] args) throws MsgException
 	{
 		String host = getHost().getName();
-		setName("Receiver-"+host);
 		Number160 peerID = Number160.createHash(host);
 		DummyChannel channel = new DummyChannel(InetSocketAddress.createUnresolved("127.0.0.1", 4444), InetSocketAddress.createUnresolved("127.0.0.1", 5555));
 		DummyChannelHandlerContext ctx = new DummyChannelHandlerContext(channel);

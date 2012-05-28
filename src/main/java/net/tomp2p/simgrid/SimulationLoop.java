@@ -19,17 +19,30 @@ package net.tomp2p.simgrid;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 
+import org.simgrid.msg.Host;
 import org.simgrid.msg.Msg;
 import org.simgrid.msg.MsgException;
 import org.simgrid.msg.Process;
 
 public class SimulationLoop extends Process
 {
+	public SimulationLoop(Host host, String name, String[]args)
+	{
+		super(host, "Loop-"+host, args);
+		try
+		{
+			main(args);
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
 	@Override
 	public void main(String[] args) throws MsgException
 	{
 		String host = getHost().getName();
-		setName("Loop-"+host);
 		Number160 peerID = Number160.createHash(host);
 		
 		Peer peer = SimGridTomP2P.getPeer(peerID);

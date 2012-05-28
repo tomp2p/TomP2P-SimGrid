@@ -79,8 +79,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.simgrid</groupId>
-			<artifactId>msg</artifactId>
-			<version>3.6.2.1-1</version>
+			<artifactId>simgrid</artifactId>
+			<version>3.7</version>
 		</dependency>
 		<dependency>
 			<groupId>net.tomp2p</groupId>

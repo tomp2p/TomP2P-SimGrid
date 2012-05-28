@@ -106,7 +106,7 @@ public class SimGridTomP2P
 			{
 				try
 				{
-					Process.waitFor(millis/1000d);
+					Process.sleep(millis);
 				}
 				catch (HostFailureException e)
 				{
@@ -119,7 +119,7 @@ public class SimGridTomP2P
 			{
 				try
 				{
-					Process.waitFor(millis/1000d);
+					Process.sleep(millis);
 				}
 				catch (HostFailureException e)
 				{
@@ -172,7 +172,7 @@ public class SimGridTomP2P
 								{
 									synchronized (semaphore)
 									{
-										Process.waitFor(Double.MIN_VALUE);
+										Process.sleep(0);
 									}
 								}
 							}
