@@ -389,14 +389,14 @@ public class SimGridTomP2P
 		}
 	}
 	
-	public static void setSimulation(Simulation simulation2)
+	public static void setSimulation(Simulation simulation)
 	{
-		simulation = simulation2;
+		SimGridTomP2P.simulation = simulation;
 	}
 	
 	public static Simulation getSimulation()
 	{
-		return simulation;
+		return SimGridTomP2P.simulation;
 	}
 	
 	public static void checkArgs(String[] args)
